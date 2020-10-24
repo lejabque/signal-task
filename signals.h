@@ -42,7 +42,7 @@ struct signal<void(Args...)> {
       if (is_linked()) {
         unlink();
         slot = {};
-        for (iteration_token* tok = sig->top_token; tok; tok = tok->next) {
+        for (iteration_token* tok = sig->top_token; tok != nullptr; tok = tok->next) {
           if (tok->current != sig->connections.end() && &*tok->current == this) {
             ++tok->current;
           }
@@ -62,7 +62,7 @@ struct signal<void(Args...)> {
       if (other.is_linked()) {
         sig->connections.insert(sig->connections.as_iterator(other), *this);
         other.unlink();
-        for (iteration_token* tok = sig->top_token; tok; tok = tok->next) {
+        for (iteration_token* tok = sig->top_token; tok != nullptr; tok = tok->next) {
           if (tok->current != sig->connections.end() && &*tok->current == &other) {
             tok->current = sig->connections.as_iterator(*this);
           }
@@ -83,7 +83,7 @@ struct signal<void(Args...)> {
   signal& operator=(signal const&) = delete;
 
   ~signal() {
-    for (iteration_token* tok = top_token; tok; tok = tok->next) {
+    for (iteration_token* tok = top_token; tok != nullptr; tok = tok->next) {
       tok->destroyed = true;
     }
   }
