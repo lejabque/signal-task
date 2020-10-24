@@ -25,30 +25,15 @@ struct signal<void(Args...)> {
     connection(connection&& other) noexcept
         : slot(std::move(other.slot)),
           sig(other.sig) {
-      if (other.is_linked()) {
-        sig->connections.insert(sig->connections.as_iterator(other), *this);
-        other.unlink();
-        for (iteration_token* tok = sig->top_token; tok; tok = tok->next) {
-          if (tok->current != sig->connections.end() && &*tok->current == &other) {
-            tok->current = sig->connections.as_iterator(*this);
-          }
-        }
-      }
+      replace_sig(other);
     }
 
     connection& operator=(connection&& other) noexcept {
       if (this != &other) {
-        if (other.is_linked()) {
-          other.sig->connections.insert(other.sig->connections.as_iterator(other), *this);
-          other.unlink();
-          for (iteration_token* tok = other.sig->top_token; tok; tok = tok->next) {
-            if (tok->current != other.sig->connections.end() && &*tok->current == &other) {
-              tok->current = other.sig->connections.as_iterator(*this);
-            }
-          }
-        }
+        unlink();
         sig = other.sig;
         slot = std::move(other.slot);
+        replace_sig(other);
       }
       return *this;
     }
@@ -66,7 +51,25 @@ struct signal<void(Args...)> {
       }
     }
 
+    ~connection() {
+      disconnect();
+    }
+
     friend struct signal;
+
+   private:
+    void replace_sig(connection& other) noexcept {
+      if (other.is_linked()) {
+        sig->connections.insert(sig->connections.as_iterator(other), *this);
+        other.unlink();
+        for (iteration_token* tok = sig->top_token; tok; tok = tok->next) {
+          if (tok->current != sig->connections.end() && &*tok->current == &other) {
+            tok->current = sig->connections.as_iterator(*this);
+          }
+        }
+      }
+    }
+
    private:
     signal* sig;
     slot_t slot;
@@ -88,17 +91,9 @@ struct signal<void(Args...)> {
   connection connect(std::function<void(Args...)> slot) noexcept {
     return connection(this, std::move(slot));
   }
-  struct iteration_token {
-    typename connections_t::const_iterator current;
-    bool destroyed;
-    iteration_token* next;
-  };
 
   void operator()(Args... args) const {
-    iteration_token tok;
-    tok.current = connections.begin();
-    tok.next = top_token;
-    tok.destroyed = false;
+    iteration_token tok(connections.begin(), top_token);
     top_token = &tok;
     try {
       while (tok.current != connections.end()) {
@@ -117,6 +112,18 @@ struct signal<void(Args...)> {
   }
 
  private:
+  struct iteration_token {
+    using iterator_t = typename connections_t::const_iterator;
+    iteration_token(iterator_t current, iteration_token* next)
+        : current(std::move(current)),
+          next(next),
+          destroyed(false) {}
+
+    iterator_t current;
+    iteration_token* next;
+    bool destroyed;
+  };
+
   connections_t connections;
   mutable iteration_token* top_token = nullptr;
 };

@@ -7,7 +7,7 @@ struct default_tag;
 
 template<typename Tag = default_tag>
 struct list_element {
-  void unlink() {
+  void unlink() noexcept {
     if (next != nullptr) {
       next->prev = prev;
     }
@@ -18,7 +18,7 @@ struct list_element {
     prev = nullptr;
   }
 
-  bool is_linked() {
+  bool is_linked() const noexcept {
     return next != nullptr || prev != nullptr;
   }
 
@@ -48,15 +48,15 @@ struct list {
                                          value_type>&;
 
     list_iterator() = default;
-    list_iterator(list_iterator const&) = default;
-    list_iterator& operator=(list_iterator const& other) = default;
+    list_iterator(list_iterator const&) noexcept = default;
+    list_iterator& operator=(list_iterator const& other) noexcept = default;
 
     template<bool OtherConst, class = std::enable_if_t<IsConst && !OtherConst>>
-    list_iterator(list_iterator<OtherConst> const& other)
+    list_iterator(list_iterator<OtherConst> const& other) noexcept
         : element(other.element) {}
 
     template<bool OtherConst, class = std::enable_if_t<IsConst && !OtherConst>>
-    list_iterator& operator=(list_iterator<OtherConst> const& other) {
+    list_iterator& operator=(list_iterator<OtherConst> const& other) noexcept {
       element = other.element;
       return *this;
     }
@@ -83,19 +83,19 @@ struct list {
       return res_it;
     }
 
-    bool operator==(list_iterator const& other) const {
+    bool operator==(list_iterator const& other) const noexcept {
       return element == other.element;
     }
 
-    bool operator!=(list_iterator const& other) const {
+    bool operator!=(list_iterator const& other) const noexcept {
       return element != other.element;
     }
 
-    reference operator*() const {
+    reference operator*() const noexcept {
       return *static_cast<pointer>(element);
     }
 
-    pointer operator->() const {
+    pointer operator->() const noexcept {
       return static_cast<pointer>(element);
     }
 
@@ -103,7 +103,7 @@ struct list {
     using ptr_type = std::conditional_t<IsConst,
                                         const list_element<Tag>,
                                         list_element<Tag>>;
-    explicit list_iterator(ptr_type* element)
+    explicit list_iterator(ptr_type* element) noexcept
         : element(element) {}
 
    private:
@@ -122,7 +122,7 @@ struct list {
     null_node.next = &null_node;
   }
 
-  void swap(list& other) {
+  void swap(list& other) noexcept {
     using std::swap;
     swap(null_node.prev, other.null_node.prev);
     swap(null_node.prev->next, other.null_node.prev->next);
@@ -131,7 +131,8 @@ struct list {
   }
 
   list(list const&) = delete;
-  list(list&& other) noexcept: list() {
+  list(list&& other) noexcept
+      : list() {
     swap(other);
   }
 
@@ -249,7 +250,7 @@ struct list {
   }
 
  private:
-  static list_element<Tag>* iterator_to_ptr(const_iterator p) {
+  static list_element<Tag>* iterator_to_ptr(const_iterator p) noexcept {
     return const_cast<list_element<Tag>*>(static_cast<list_element<Tag> const*>(&*p));
   }
 
