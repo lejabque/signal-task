@@ -26,7 +26,8 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address,undefined
 
 add_executable(signal_testing
     signals.h
-    signals_testing.cpp)
+    signals_testing.cpp
+    intrusive_list.h)
 
 set_property(TARGET signal_testing PROPERTY CXX_STANDARD 17)
 
