@@ -30,7 +30,7 @@ struct signal<void(Args...)> {
 
     connection& operator=(connection&& other) noexcept {
       if (this != &other) {
-        unlink();
+        disconnect();
         sig = other.sig;
         slot = std::move(other.slot);
         replace_sig(other);
