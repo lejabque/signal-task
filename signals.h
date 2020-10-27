@@ -93,32 +93,33 @@ struct signal<void(Args...)> {
   }
 
   void operator()(Args... args) const {
-    iteration_token tok(connections.begin(), top_token);
-    top_token = &tok;
-    try {
-      while (tok.current != connections.end()) {
-        auto copy = tok.current;
-        ++tok.current;
-        copy->slot(args...);
-        if (tok.destroyed) {
-          return;
-        }
+    iteration_token tok(this);
+    while (tok.current != connections.end()) {
+      auto copy = tok.current;
+      ++tok.current;
+      copy->slot(args...);
+      if (tok.destroyed) {
+        return;
       }
-    } catch (...) {
-      top_token = tok.next;
-      throw;
     }
-    top_token = tok.next;
   }
 
  private:
   struct iteration_token {
     using iterator_t = typename connections_t::const_iterator;
-    iteration_token(iterator_t current, iteration_token* next)
-        : current(std::move(current)),
-          next(next),
-          destroyed(false) {}
-
+    explicit iteration_token(signal const* sig)
+        : sig(sig),
+          current(sig->connections.begin()),
+          next(sig->top_token),
+          destroyed(false) {
+      sig->top_token = this;
+    }
+    ~iteration_token() {
+      if (!destroyed) {
+        sig->top_token = next;
+      }
+    }
+    signal const* sig;
     iterator_t current;
     iteration_token* next;
     bool destroyed;
