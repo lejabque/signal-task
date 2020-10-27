@@ -84,7 +84,7 @@ struct signal<void(Args...)> {
 
   ~signal() {
     for (iteration_token* tok = top_token; tok != nullptr; tok = tok->next) {
-      tok->destroyed = true;
+      tok->sig = nullptr;
     }
   }
 
@@ -98,7 +98,7 @@ struct signal<void(Args...)> {
       auto copy = tok.current;
       ++tok.current;
       copy->slot(args...);
-      if (tok.destroyed) {
+      if (tok.sig == nullptr) {
         return;
       }
     }
@@ -110,19 +110,17 @@ struct signal<void(Args...)> {
     explicit iteration_token(signal const* sig)
         : sig(sig),
           current(sig->connections.begin()),
-          next(sig->top_token),
-          destroyed(false) {
+          next(sig->top_token) {
       sig->top_token = this;
     }
     ~iteration_token() {
-      if (!destroyed) {
+      if (sig != nullptr) {
         sig->top_token = next;
       }
     }
-    signal const* sig;
     iterator_t current;
     iteration_token* next;
-    bool destroyed;
+    signal const* sig;
   };
 
   connections_t connections;
