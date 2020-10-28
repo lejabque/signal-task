@@ -86,6 +86,7 @@ struct signal<void(Args...)> {
     for (iteration_token* tok = top_token; tok != nullptr; tok = tok->next) {
       tok->sig = nullptr;
     }
+    connections.clear();
   }
 
   connection connect(std::function<void(Args...)> slot) noexcept {
